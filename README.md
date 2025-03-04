@@ -105,6 +105,16 @@ PORT=3001                 # 后端服务器端口
 DATABASE_PATH=./database.sqlite  # 数据库文件路径
 ```
 
+## 持续集成/持续部署
+
+本项目使用GitHub Actions进行自动化构建、测试和部署：
+
+- **CI工作流**：在每次推送到main分支或创建Pull Request时自动构建和测试代码
+- **发布工作流**：在创建新的Release时自动构建发布包并推送Docker镜像
+- **依赖审查**：在Pull Request时自动检查依赖项的安全性
+
+查看[GitHub Actions工作流配置](.github/workflows)了解更多信息。
+
 ## 项目结构
 
 ```
