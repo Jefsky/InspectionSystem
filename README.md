@@ -6,6 +6,7 @@
 
 [![CI](https://github.com/Jefsky/InspectionSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/Jefsky/InspectionSystem/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://jefsky.github.io/InspectionSystem/)
 
 ## 功能特点
 
