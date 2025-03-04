@@ -33,6 +33,14 @@ jobs:
     
     - name: Test
       run: npm test || true
+      
+    # 添加显式的上传构建产物步骤，使用最新的v4版本
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact-${{ matrix.node-version }}
+        path: dist/
+        retention-days: 1
 
   docker:
     runs-on: ubuntu-latest
