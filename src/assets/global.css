@@ -1,0 +1,43 @@
+/* 全局样式 */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-y: visible !important;
+  overflow-x: hidden;
+  height: auto;
+  min-height: 100%;
+  font-family: 'Noto Sans SC', 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  background-color: #f5f7fa;
+  color: #303133;
+}
+
+/* 移除滚动条 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* Element Plus 样式覆盖 */
+.el-card {
+  border-radius: 4px;
+  border: none;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s;
+}
+
+.el-card:hover {
+  transform: translateY(-2px);
+}
+
+.el-button {
+  font-weight: 500;
+}
+
+.el-tag {
+  font-weight: 500;
+}
+
+.el-form-item__label {
+  font-weight: 500;
+}
