@@ -62,7 +62,7 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/inspection-system:latest
-          ghcr.io/${{ github.repository_owner }}/inspection-system:${{ github.event.release.tag_name }}
+          ghcr.io/${{ github.repository_owner | lower }}/inspection-system:latest
+          ghcr.io/${{ github.repository_owner | lower }}/inspection-system:${{ github.event.release.tag_name }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
