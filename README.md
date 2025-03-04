@@ -4,16 +4,19 @@
 
 ![网站检查系统](screenshots/preview.png)
 
+[![CI](https://github.com/Jefsky/InspectionSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/Jefsky/InspectionSystem/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## 功能特点
 
-- 🔍 监控网站的可访问性状态
-- 🔒 检查SSL证书的有效性和到期日期
-- 📊 直观的界面展示检查结果
-- 🔄 一键刷新所有网站状态
-- ⏱️ 智能时间显示（相对时间或具体日期）
-- 📱 响应式设计，适配各种设备
-- 🌐 支持HTTP和HTTPS协议
-- 🔔 显示SSL证书详细信息
+- 监控网站的可访问性状态
+- 检查SSL证书的有效性和到期日期
+- 直观的界面展示检查结果
+- 一键刷新所有网站状态
+- 智能时间显示（相对时间或具体日期）
+- 响应式设计，适配各种设备
+- 支持HTTP和HTTPS协议
+- 显示SSL证书详细信息
 
 ## 技术栈
 

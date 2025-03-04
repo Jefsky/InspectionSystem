@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 16
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        registry-url: https://registry.npmjs.org/
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Create release artifact
+      run: |
+        mkdir -p release
+        cp -r dist server package.json package-lock.json LICENSE README.md release/
+        cd release
+        zip -r ../inspection-system-${{ github.event.release.tag_name }}.zip .
+    
+    - name: Upload release artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./inspection-system-${{ github.event.release.tag_name }}.zip
+        asset_name: inspection-system-${{ github.event.release.tag_name }}.zip
+        asset_content_type: application/zip
+    
+  docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/inspection-system:latest
+          ghcr.io/${{ github.repository_owner }}/inspection-system:${{ github.event.release.tag_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
