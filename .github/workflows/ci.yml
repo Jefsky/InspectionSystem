@@ -18,6 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Clean workspace
+      run: rm -rf node_modules/
+    
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -34,7 +37,6 @@ jobs:
     - name: Test
       run: npm test || true
       
-    # 添加显式的上传构建产物步骤，使用最新的v4版本
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
@@ -51,7 +53,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    # 下载构建产物
+    - name: Clean Docker cache
+      run: docker system prune -a --force
+    
     - name: Download build artifact
       uses: actions/download-artifact@v4
       with:
