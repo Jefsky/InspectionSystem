@@ -35,7 +35,8 @@ if (isElectron && process.env.NODE_ENV !== 'development') {
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: dbPath,
-  logging: false
+  logging: false,
+  dialectModule: require('better-sqlite3')
 });
 
 // 初始化数据库

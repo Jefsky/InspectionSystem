@@ -2,6 +2,8 @@
   "name": "inspection-system",
   "version": "1.0.0",
   "private": true,
+  "description": "一个用于监控网站可访问性和SSL证书状态的系统",
+  "author": "Jefsky",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -16,13 +18,13 @@
   },
   "dependencies": {
     "axios": "^1.5.0",
+    "better-sqlite3": "^8.7.0",
     "cors": "^2.8.5",
     "echarts": "^5.6.0",
     "element-plus": "^2.3.12",
     "express": "^4.18.2",
     "https": "^1.0.0",
     "sequelize": "^6.32.1",
-    "sqlite3": "^5.1.6",
     "vue": "^3.3.4"
   },
   "devDependencies": {

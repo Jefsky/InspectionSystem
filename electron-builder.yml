@@ -25,3 +25,5 @@ nsis:
 extraResources:
   - from: server/database
     to: database
+electronDist: node_modules/electron/dist
+electronVersion: 28.1.0
