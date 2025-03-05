@@ -27,6 +27,117 @@ app.get('/websites', async (req, res) => {
   }
 });
 
+// 获取网站统计数据
+app.get('/statistics', async (req, res) => {
+  try {
+    console.log('获取网站统计数据请求')
+    const websites = await Website.findAll();
+    
+    // 初始化统计对象
+    const stats = {
+      totalCount: websites.length,
+      accessibleCount: 0,
+      inaccessibleCount: 0,  // 添加不可访问网站计数
+      sslValidCount: 0,
+      avgResponseTime: 0,
+      statusCodes: {},
+      sslStatus: {},
+      sslValid: 0,
+      sslExpiringSoon: 0,
+      sslExpired: 0,
+      sslSelfSigned: 0,
+      sslNone: 0,
+      recentlyUpdated: [],
+      lastCheck: new Date().toISOString()  // 使用ISO字符串格式
+    };
+    
+    // 计算可访问和SSL有效的网站数量
+    websites.forEach(website => {
+      if (website.isAccessible) {
+        stats.accessibleCount++;
+        if (website.responseTime) {
+          stats.avgResponseTime += website.responseTime;
+        }
+      } else {
+        stats.inaccessibleCount++;  // 计算不可访问网站数量
+      }
+      
+      if (website.sslStatus === 'valid') {
+        stats.sslValidCount++;
+      }
+      
+      // 统计SSL状态
+      if (website.sslStatus) {
+        if (!stats.sslStatus[website.sslStatus]) {
+          stats.sslStatus[website.sslStatus] = 0;
+        }
+        stats.sslStatus[website.sslStatus]++;
+        
+        // 为图表添加具体的SSL状态计数
+        switch(website.sslStatus) {
+          case 'valid':
+            stats.sslValid++;
+            break;
+          case 'expiring_soon':
+            stats.sslExpiringSoon++;
+            break;
+          case 'expired':
+            stats.sslExpired++;
+            break;
+          case 'invalid':
+          case 'self_signed':
+            stats.sslSelfSigned++;
+            break;
+          case 'none':
+          default:
+            stats.sslNone++;
+            break;
+        }
+      } else {
+        // 如果没有SSL状态，计为无SSL
+        stats.sslNone++;
+      }
+      
+      // 统计状态码
+      if (website.statusCode) {
+        if (!stats.statusCodes[website.statusCode]) {
+          stats.statusCodes[website.statusCode] = 0;
+        }
+        stats.statusCodes[website.statusCode]++;
+      }
+    });
+    
+    // 计算平均响应时间
+    if (stats.accessibleCount > 0) {
+      stats.avgResponseTime = Math.round(stats.avgResponseTime / stats.accessibleCount);
+    }
+    
+    // 获取最近更新的5个网站
+    const recentlyUpdated = [...websites]
+      .sort((a, b) => new Date(b.lastCheck || 0) - new Date(a.lastCheck || 0))
+      .slice(0, 5)
+      .map(site => ({
+        id: site.id,
+        domain: site.domain,
+        title: site.title || site.domain,
+        lastCheck: site.lastCheck,
+        isAccessible: site.isAccessible,
+        responseTime: site.responseTime,
+        statusCode: site.statusCode
+      }));
+    
+    stats.recentlyUpdated = recentlyUpdated;
+    
+    console.log('统计数据:', JSON.stringify(stats, null, 2));
+    res.setHeader('Content-Type', 'application/json');
+    return res.json(stats);
+  } catch (error) {
+    console.error('获取统计数据失败:', error);
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ error: '获取统计数据失败: ' + error.message });
+  }
+});
+
 // 获取单个网站
 app.get('/websites/:id', async (req, res) => {
   try {
@@ -186,10 +297,41 @@ const formatDate = (dateStr) => {
   }
 };
 
+const sanitizeCertificateInfo = (info) => {
+  if (!info) return null;
+  
+  // 创建一个新对象，过滤掉可能包含编码问题的值
+  const sanitized = {};
+  
+  for (const [key, value] of Object.entries(info)) {
+    // 如果值是字符串，检查是否包含可能的乱码
+    if (typeof value === 'string') {
+      // 检查是否包含不可打印字符或问号（通常表示编码问题）
+      const containsUnprintable = /[\u0000-\u001F\u007F-\u009F\uFFFD]/.test(value);
+      const containsQuestionMarks = value.includes('?');
+      
+      if (!containsUnprintable && !containsQuestionMarks) {
+        sanitized[key] = value;
+      } else if (key === 'CN') {
+        // 对于CN字段，即使有问题也保留，因为这是最重要的字段
+        sanitized[key] = value.replace(/[\u0000-\u001F\u007F-\u009F\uFFFD]/g, '');
+      }
+    } else {
+      // 非字符串值直接保留
+      sanitized[key] = value;
+    }
+  }
+  
+  return sanitized;
+};
+
 const checkUrl = async (domain, protocol = 'https') => {
   return new Promise(async (resolve, reject) => {
     try {
       const url = `${protocol}://${domain}`;
+      
+      // 开始计时
+      const startTime = Date.now();
       
       // 选择合适的请求模块
       const requestModule = protocol === 'https' ? https : http;
@@ -207,6 +349,10 @@ const checkUrl = async (domain, protocol = 'https') => {
           timeout: 15000
         })
       }, (res) => {
+        // 计算响应时间
+        const responseTime = Date.now() - startTime;
+        console.log(`网站 ${domain} 响应时间: ${responseTime}ms`);
+        
         const statusCode = res.statusCode;
         const isAccessible = statusCode >= 200 && statusCode < 400;
         const isHttps = protocol === 'https';
@@ -232,51 +378,47 @@ const checkUrl = async (domain, protocol = 'https') => {
               try {
                 validFrom = new Date(certificate.valid_from);
                 validTo = new Date(certificate.valid_to);
-                
-                if (isNaN(validFrom.getTime()) || isNaN(validTo.getTime())) {
-                  sslStatus = 'invalid';
-                  error = '证书日期格式无效';
-                } else if (now < validFrom) {
+              } catch (e) {
+                console.error('证书日期解析错误:', e);
+                validFrom = null;
+                validTo = null;
+              }
+              
+              const daysRemaining = validTo ? Math.ceil((validTo - now) / (1000 * 60 * 60 * 24)) : 0;
+              
+              // 检查是否自签名
+              const isSelfSigned = certificate.issuer.CN === certificate.subject.CN;
+              
+              if (isSelfSigned) {
+                sslStatus = 'invalid';
+                error = '自签名证书（无效）';
+              } else if (validFrom && validTo) {
+                if (now < validFrom) {
                   sslStatus = 'invalid';
                   error = '证书尚未生效';
                 } else if (now > validTo) {
                   sslStatus = 'expired';
                   error = '证书已过期';
                 } else {
-                  // 检查自签名
-                  const issuerCN = certificate.issuer?.CN || certificate.issuer?.O;
-                  const subjectCN = certificate.subject?.CN || certificate.subject?.O;
-
-                  if (issuerCN === subjectCN) {
-                    sslStatus = 'self-signed';
-                    error = '不安全：使用自签名证书';
-                  } else {
-                    sslStatus = 'valid';
-                    const daysRemaining = Math.ceil((validTo - now) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysRemaining <= 30) {
-                      error = `证书即将过期（剩余 ${daysRemaining} 天）`;
-                    }
-
-                    certificateInfo = {
-                      issuer: issuerCN || 'Unknown',
-                      subject: subjectCN || 'Unknown',
-                      validFrom: validFrom.toISOString(),
-                      validTo: validTo.toISOString(),
-                      daysRemaining,
-                      serialNumber: certificate.serialNumber || 'Unknown',
-                      fingerprint: certificate.fingerprint || 'Unknown'
-                    };
-                  }
+                  sslStatus = 'valid';
+                  error = null;
                 }
-              } catch (dateError) {
-                console.error('Date parsing error:', dateError);
+              } else {
                 sslStatus = 'invalid';
-                error = '证书日期解析错误';
+                error = '无效的证书日期';
               }
+              
+              certificateInfo = {
+                issuer: sanitizeCertificateInfo(certificate.issuer),
+                subject: sanitizeCertificateInfo(certificate.subject),
+                validFrom: validFrom ? validFrom.toISOString() : null,
+                validTo: validTo ? validTo.toISOString() : null,
+                daysRemaining,
+                isSelfSigned
+              };
             }
           } catch (certError) {
-            console.error('Certificate processing error:', certError);
+            console.error('证书处理错误:', certError);
             sslStatus = 'invalid';
             error = '证书处理错误: ' + certError.message;
           }
@@ -288,7 +430,9 @@ const checkUrl = async (domain, protocol = 'https') => {
           sslStatus,
           certificateInfo,
           error,
-          lastCheck: new Date()
+          lastCheck: new Date(),
+          responseTime,
+          statusCode
         });
 
         // 确保响应被正确关闭
@@ -303,7 +447,9 @@ const checkUrl = async (domain, protocol = 'https') => {
           sslStatus: protocol === 'https' ? 'invalid' : 'none', // 如果是HTTPS但连接失败，标记为invalid
           certificateInfo: null,
           error: `连接失败: ${error.message}`,
-          lastCheck: new Date()
+          lastCheck: new Date(),
+          responseTime: null,
+          statusCode: null
         });
       });
 
@@ -316,7 +462,9 @@ const checkUrl = async (domain, protocol = 'https') => {
           sslStatus: protocol === 'https' ? 'invalid' : 'none', // 如果是HTTPS但超时，标记为invalid
           certificateInfo: null,
           error: '请求超时',
-          lastCheck: new Date()
+          lastCheck: new Date(),
+          responseTime: null,
+          statusCode: null
         });
       });
 
@@ -329,7 +477,9 @@ const checkUrl = async (domain, protocol = 'https') => {
         sslStatus: protocol === 'https' ? 'invalid' : 'none', // 如果是HTTPS但出错，标记为invalid
         certificateInfo: null,
         error: error.message,
-        lastCheck: new Date()
+        lastCheck: new Date(),
+        responseTime: null,
+        statusCode: null
       });
     }
   });
@@ -337,13 +487,25 @@ const checkUrl = async (domain, protocol = 'https') => {
 
 const checkWebsite = async (domain, protocol = 'https') => {
   try {
+    // 先尝试使用指定的协议
     const result = await checkUrl(domain, protocol);
+    
+    // 如果使用HTTPS失败且协议是HTTPS，则尝试使用HTTP
+    if (!result.isAccessible && protocol === 'https') {
+      console.log(`HTTPS连接失败，尝试使用HTTP连接 ${domain}`);
+      const httpResult = await checkUrl(domain, 'http');
+      return httpResult;
+    }
+    
     return result;
   } catch (error) {
     console.error(`检查网站 ${domain} 出错:`, error);
     return {
       isAccessible: false,
-      error: error.message
+      error: error.message,
+      lastCheck: new Date(),
+      responseTime: null,
+      statusCode: null
     };
   }
 };
@@ -428,7 +590,9 @@ app.post('/check-all', async (req, res) => {
             error: '检查失败：' + error.message,
             sslStatus: 'none',
             protocol: 'http',
-            lastCheck: new Date()
+            lastCheck: new Date(),
+            responseTime: null,
+            statusCode: null
           };
         }
       })
@@ -436,6 +600,194 @@ app.post('/check-all', async (req, res) => {
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: '批量检查失败：' + error.message });
+  }
+});
+
+// 刷新所有网站
+app.post('/refresh-all', async (req, res) => {
+  try {
+    console.log('开始刷新所有网站');
+    const websites = await Website.findAll();
+    const results = [];
+    const now = new Date(); // 使用同一个时间戳
+    
+    for (const website of websites) {
+      try {
+        console.log(`刷新网站: ${website.domain}`);
+        const checkResult = await checkWebsite(website.domain);
+        console.log(`更新网站 ${website.domain} 的最后检查时间:`, now.toISOString());
+        await website.update({
+          ...checkResult,
+          lastCheck: now.toISOString()  // 使用ISO字符串格式存储时间
+        });
+        const updatedWebsite = await website.reload();
+        results.push(updatedWebsite);
+      } catch (error) {
+        console.error(`刷新网站 ${website.domain} 失败:`, error);
+        // 继续处理下一个网站，不中断整个过程
+      }
+    }
+    
+    console.log(`成功刷新 ${results.length}/${websites.length} 个网站`);
+    
+    // 获取最新的统计数据
+    const stats = {
+      totalCount: 0,
+      accessibleCount: 0,
+      inaccessibleCount: 0,  // 添加不可访问网站计数
+      sslValidCount: 0,
+      avgResponseTime: 0,
+      statusCodes: {},
+      sslStatus: {},
+      sslValid: 0,
+      sslExpiringSoon: 0,
+      sslExpired: 0,
+      sslSelfSigned: 0,
+      sslNone: 0,
+      recentlyUpdated: [],
+      lastCheck: now.toISOString()
+    };
+    
+    // 重新计算统计数据
+    const allWebsites = await Website.findAll();
+    stats.totalCount = allWebsites.length;
+    
+    // 计算可访问网站数量
+    stats.accessibleCount = allWebsites.filter(site => site.isAccessible).length;
+    stats.inaccessibleCount = allWebsites.filter(site => !site.isAccessible).length;  // 计算不可访问网站数量
+    
+    // 计算SSL有效的网站数量
+    stats.sslValidCount = allWebsites.filter(site => site.sslStatus === 'valid').length;
+    
+    // 计算平均响应时间
+    const responseTimes = allWebsites
+      .filter(site => site.responseTime && site.isAccessible)
+      .map(site => site.responseTime);
+    
+    stats.avgResponseTime = responseTimes.length > 0
+      ? Math.round(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length)
+      : 0;
+    
+    // 统计状态码分布
+    allWebsites.forEach(site => {
+      if (site.statusCode) {
+        stats.statusCodes[site.statusCode] = (stats.statusCodes[site.statusCode] || 0) + 1;
+      }
+    });
+    
+    // 统计SSL状态分布
+    allWebsites.forEach(site => {
+      if (site.sslStatus) {
+        stats.sslStatus[site.sslStatus] = (stats.sslStatus[site.sslStatus] || 0) + 1;
+        
+        // 为图表添加具体的SSL状态计数
+        switch(site.sslStatus) {
+          case 'valid':
+            stats.sslValid++;
+            break;
+          case 'expiring_soon':
+            stats.sslExpiringSoon++;
+            break;
+          case 'expired':
+            stats.sslExpired++;
+            break;
+          case 'invalid':
+          case 'self_signed':
+            stats.sslSelfSigned++;
+            break;
+          case 'none':
+          default:
+            stats.sslNone++;
+            break;
+        }
+      } else {
+        // 如果没有SSL状态，计为无SSL
+        stats.sslNone++;
+      }
+    });
+    
+    // 获取最近更新的网站
+    const recentlyUpdated = allWebsites
+      .sort((a, b) => new Date(b.lastCheck || 0) - new Date(a.lastCheck || 0))
+      .slice(0, 5)
+      .map(site => ({
+        id: site.id,
+        domain: site.domain,
+        title: site.title || site.domain,
+        lastCheck: site.lastCheck,
+        isAccessible: site.isAccessible,
+        responseTime: site.responseTime,
+        statusCode: site.statusCode
+      }));
+    
+    stats.recentlyUpdated = recentlyUpdated;
+    
+    console.log('更新后的统计数据:', stats);
+    
+    // 返回结果和更新的统计数据
+    res.json({
+      results,
+      statistics: stats
+    });
+  } catch (error) {
+    console.error('刷新所有网站失败:', error);
+    res.status(500).json({ error: '刷新所有网站失败: ' + error.message });
+  }
+});
+
+// 刷新单个网站
+app.post('/refresh/:id', async (req, res) => {
+  try {
+    console.log(`刷新网站ID: ${req.params.id}`);
+    const website = await Website.findByPk(req.params.id);
+    
+    if (!website) {
+      return res.status(404).json({ error: '网站不存在' });
+    }
+    
+    console.log(`刷新网站: ${website.domain}`);
+    const checkResult = await checkWebsite(website.domain, website.protocol || 'https');
+    
+    // 使用当前时间作为最后检查时间
+    const now = new Date();
+    console.log(`更新网站 ${website.domain} 的最后检查时间:`, now.toISOString());
+    
+    await website.update({
+      ...checkResult,
+      lastCheck: now.toISOString()  // 使用ISO字符串格式存储时间
+    });
+    
+    const updatedWebsite = await website.reload();
+    res.json(updatedWebsite);
+  } catch (error) {
+    console.error(`刷新网站失败:`, error);
+    res.status(500).json({ error: '刷新网站失败: ' + error.message });
+  }
+});
+
+// 切换网站置顶状态
+app.post('/websites/:id/toggle-pin', async (req, res) => {
+  try {
+    console.log(`切换网站ID: ${req.params.id} 的置顶状态`);
+    const website = await Website.findByPk(req.params.id);
+    
+    if (!website) {
+      return res.status(404).json({ error: '网站不存在' });
+    }
+    
+    // 切换置顶状态
+    const newPinnedStatus = !website.isPinned;
+    console.log(`将网站 ${website.domain} 的置顶状态从 ${website.isPinned} 更改为 ${newPinnedStatus}`);
+    
+    await website.update({
+      isPinned: newPinnedStatus
+    });
+    
+    const updatedWebsite = await website.reload();
+    res.json(updatedWebsite);
+  } catch (error) {
+    console.error(`切换网站置顶状态失败:`, error);
+    res.status(500).json({ error: '切换网站置顶状态失败: ' + error.message });
   }
 });
 

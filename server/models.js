@@ -2,7 +2,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 
 const sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: './database.sqlite'
+    storage: '../database.sqlite'
 });
 
 const Website = sequelize.define('Website', {
@@ -37,6 +37,20 @@ const Website = sequelize.define('Website', {
     certificateInfo: {
         type: DataTypes.JSON,
         allowNull: true
+    },
+    responseTime: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0
+    },
+    statusCode: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    isPinned: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
     }
 });
 
@@ -44,7 +58,9 @@ const initDatabase = async () => {
     try {
         await sequelize.authenticate();
         console.log('Database connection has been established successfully.');
-        await Website.sync();
+        
+        // 使用alter: true更新数据库表结构
+        await Website.sync({ alter: true });
         console.log('Website model synchronized successfully.');
     } catch (error) {
         console.error('Unable to connect to the database:', error);
