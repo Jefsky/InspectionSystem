@@ -7,6 +7,17 @@ files:
   - electron/**/*
   - server/**/*
   - package.json
+  - "!node_modules/sqlite3/build/Release/obj"
+  - "!node_modules/sqlite3/build/Release/obj.target"
+  - "!node_modules/sqlite3/build/Release/.deps"
+  - "!node_modules/sqlite3/build/config.gypi"
+  - "!node_modules/sqlite3/build/binding.Makefile"
+  - "!node_modules/sqlite3/build/Makefile"
+  - "!node_modules/sqlite3/build/Release/Makefile"
+  - "!node_modules/sqlite3/build/Release/obj.target"
+  - "!node_modules/sqlite3/build/Release/sqlite3.node.dSYM"
+  - "!node_modules/sqlite3/build/Release/sqlite3.node.lib"
+  - "!node_modules/sqlite3/build/Release/sqlite3.node.map"
 win:
   target: nsis
   icon: public/favicon.ico
@@ -27,3 +38,4 @@ extraResources:
     to: database
 electronDist: node_modules/electron/dist
 electronVersion: 28.1.0
+npmRebuild: false
