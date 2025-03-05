@@ -58,13 +58,13 @@
         <div class="stat-item accessibility-rate">
           <div class="stat-title">可访问率</div>
           <div class="accessibility-rate">
-            <div class="rate-value" :class="getAccessibilityRateClass(accessibilityRate)">
-              {{ accessibilityRate }}%
+            <div class="rate-value" :class="getAccessibilityRateClass(stats.accessibilityRate)">
+              {{ stats.accessibilityRate }}%
             </div>
             <el-progress 
               type="circle" 
-              :percentage="accessibilityRate" 
-              :color="getAccessibilityRateColor(accessibilityRate)"
+              :percentage="stats.accessibilityRate" 
+              :color="getAccessibilityRateColor(stats.accessibilityRate)"
               :width="80"
             ></el-progress>
           </div>
@@ -207,13 +207,8 @@ const stats = ref({
   avgResponseTime: 0,
   statusCodes: {},
   recentlyUpdated: [],
-  lastCheck: null
-})
-
-// 计算属性：可访问率
-const accessibilityRate = computed(() => {
-  if (stats.value.totalCount === 0) return 0
-  return Math.round((stats.value.accessibleCount / stats.value.totalCount) * 100)
+  lastCheck: null,
+  accessibilityRate: 0
 })
 
 // 格式化日期时间

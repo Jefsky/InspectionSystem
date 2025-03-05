@@ -47,6 +47,7 @@ app.get('/statistics', async (req, res) => {
       sslExpired: 0,
       sslSelfSigned: 0,
       sslNone: 0,
+      accessibilityRate: 0, // 添加accessibilityRate字段
       recentlyUpdated: [],
       lastCheck: new Date().toISOString()  // 使用ISO字符串格式
     };
@@ -110,6 +111,11 @@ app.get('/statistics', async (req, res) => {
     // 计算平均响应时间
     if (stats.accessibleCount > 0) {
       stats.avgResponseTime = Math.round(stats.avgResponseTime / stats.accessibleCount);
+    }
+    
+    // 计算可访问性率
+    if (stats.totalCount > 0) {
+      stats.accessibilityRate = Math.round((stats.accessibleCount / stats.totalCount) * 100);
     }
     
     // 获取最近更新的5个网站
@@ -644,6 +650,7 @@ app.post('/refresh-all', async (req, res) => {
       sslExpired: 0,
       sslSelfSigned: 0,
       sslNone: 0,
+      accessibilityRate: 0, // 添加accessibilityRate字段
       recentlyUpdated: [],
       lastCheck: now.toISOString()
     };
@@ -667,6 +674,11 @@ app.post('/refresh-all', async (req, res) => {
     stats.avgResponseTime = responseTimes.length > 0
       ? Math.round(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length)
       : 0;
+    
+    // 计算可访问性率
+    if (stats.totalCount > 0) {
+      stats.accessibilityRate = Math.round((stats.accessibleCount / stats.totalCount) * 100);
+    }
     
     // 统计状态码分布
     allWebsites.forEach(site => {
