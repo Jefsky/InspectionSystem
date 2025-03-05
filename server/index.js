@@ -3,14 +3,43 @@ const cors = require('cors');
 const https = require('https');
 const http = require('http');
 const tls = require('tls');
-const { Website, initDatabase } = require('./models');
+const { Sequelize } = require('sequelize');
+const path = require('path');
+const initDatabase = require('./models');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// 数据库路径处理，支持Electron打包环境
+const isElectron = process.versions && process.versions.electron;
+let dbPath = path.join(__dirname, 'database', 'websites.db');
+
+// 如果是Electron环境，且不是开发模式
+if (isElectron && process.env.NODE_ENV !== 'development') {
+  // 在Electron打包环境中，使用app.getPath('userData')存储数据库
+  const { app } = require('electron');
+  if (app) {
+    const userDataPath = app.getPath('userData');
+    dbPath = path.join(userDataPath, 'database', 'websites.db');
+    
+    // 确保数据库目录存在
+    const fs = require('fs');
+    if (!fs.existsSync(path.dirname(dbPath))) {
+      fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    }
+  }
+}
+
+// 初始化Sequelize
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: dbPath,
+  logging: false
+});
+
 // 初始化数据库
-initDatabase();
+const { Website } = initDatabase(sequelize);
 
 // 获取所有网站
 app.get('/websites', async (req, res) => {

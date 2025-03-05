@@ -1,73 +1,75 @@
 const { Sequelize, DataTypes } = require('sequelize');
+const path = require('path');
 
-const sequelize = new Sequelize({
+// 定义Website模型
+let Website;
+
+// 初始化数据库
+function initDatabase(sequelizeInstance) {
+  // 如果已经传入Sequelize实例，使用它
+  const sequelize = sequelizeInstance || new Sequelize({
     dialect: 'sqlite',
-    storage: '../database.sqlite'
-});
+    storage: path.join(__dirname, 'database', 'websites.db'),
+    logging: false
+  });
 
-const Website = sequelize.define('Website', {
+  // 定义Website模型
+  Website = sequelize.define('Website', {
     domain: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false
     },
     title: {
-        type: DataTypes.STRING,
-        allowNull: true
+      type: DataTypes.STRING,
+      allowNull: true
     },
     lastCheck: {
-        type: DataTypes.DATE,
-        allowNull: false
+      type: DataTypes.DATE,
+      allowNull: false
     },
     isAccessible: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false
+      type: DataTypes.BOOLEAN,
+      allowNull: false
     },
     sslStatus: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false
     },
     protocol: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false
     },
     error: {
-        type: DataTypes.STRING,
-        allowNull: true
+      type: DataTypes.STRING,
+      allowNull: true
     },
     certificateInfo: {
-        type: DataTypes.JSON,
-        allowNull: true
+      type: DataTypes.JSON,
+      allowNull: true
     },
     responseTime: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        defaultValue: 0
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
     },
     statusCode: {
-        type: DataTypes.INTEGER,
-        allowNull: true
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
     isPinned: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
-});
+  });
 
-const initDatabase = async () => {
-    try {
-        await sequelize.authenticate();
-        console.log('Database connection has been established successfully.');
-        
-        // 使用alter: true更新数据库表结构
-        await Website.sync({ alter: true });
-        console.log('Website model synchronized successfully.');
-    } catch (error) {
-        console.error('Unable to connect to the database:', error);
-    }
-};
+  // 使用alter: true更新数据库表结构
+  sequelize.sync({ alter: true });
 
-module.exports = {
+  return {
     Website,
-    initDatabase
+    sequelize
+  };
 };
+
+module.exports = initDatabase;

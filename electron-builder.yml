@@ -1,0 +1,27 @@
+appId: com.jefsky.inspectionsystem
+productName: Website Inspection System
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/**/*
+  - server/**/*
+  - package.json
+win:
+  target: nsis
+  icon: public/favicon.ico
+mac:
+  target: dmg
+  icon: public/favicon.ico
+linux:
+  target: AppImage
+  icon: public/favicon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Website Inspection System
+extraResources:
+  - from: server/database
+    to: database
