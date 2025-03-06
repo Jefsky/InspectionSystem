@@ -10,6 +10,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 添加静态文件服务
+app.use(express.static(path.join(__dirname, '../src')));
+
 // 初始化数据库
 initDatabase();
 
