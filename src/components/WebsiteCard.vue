@@ -1,13 +1,7 @@
 <template>
   <el-card 
     class="website-card" 
-    :class="{ 
-      'is-loading': isRefreshing,
-      'status-success': isStatusSuccess,
-      'status-warning': isStatusWarning,
-      'status-danger': isStatusDanger,
-      'status-info': isStatusInfo
-    }"
+    :class="[statusClass, { 'is-pinned': props.website.isPinned }]" 
     shadow="hover"
   >
     <template #header>
@@ -284,6 +278,13 @@ const isStatusInfo = computed(() => {
   return props.website.isAccessible && 
          (props.website.sslStatus === 'none' || !props.website.sslStatus);
 });
+
+const statusClass = computed(() => {
+  if (isStatusSuccess.value) return 'status-accessible'
+  if (isStatusWarning.value) return 'status-warning'
+  if (isStatusDanger.value) return 'status-inaccessible'
+  return 'status-info'
+})
 
 // 格式化日期
 const formatDate = (dateString) => {
@@ -654,6 +655,8 @@ onMounted(() => {
 
 <style scoped>
 .website-card {
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease;
   margin-bottom: 20px;
   border-radius: 8px;
   transition: all 0.5s ease;
@@ -668,24 +671,20 @@ onMounted(() => {
   opacity: 0.7;
 }
 
-.status-success {
-  border-width: 2px;
+.status-accessible {
   border-color: #67c23a;
 }
 
-.status-warning {
-  border-width: 2px;
-  border-color: #e6a23c;
-}
-
-.status-danger {
-  border-width: 2px;
+.status-inaccessible {
   border-color: #f56c6c;
 }
 
-.status-info {
-  border-width: 2px;
-  border-color: #909399;
+.status-warning {
+  border-color: #e6a23c;
+}
+
+.is-pinned {
+  border-color: #409eff;
 }
 
 .card-header {
