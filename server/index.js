@@ -3,6 +3,7 @@ const cors = require('cors');
 const https = require('https');
 const http = require('http');
 const tls = require('tls');
+const path = require('path'); // 添加path模块
 const { Website, initDatabase } = require('./models');
 const app = express();
 
@@ -801,6 +802,11 @@ app.post('/websites/:id/toggle-pin', async (req, res) => {
     console.error(`切换网站置顶状态失败:`, error);
     res.status(500).json({ error: '切换网站置顶状态失败: ' + error.message });
   }
+});
+
+// 添加根路径路由
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 const port = 3001;
