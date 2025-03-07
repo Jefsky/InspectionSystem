@@ -6,6 +6,7 @@
 
 [![CI](https://github.com/Jefsky/InspectionSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/Jefsky/InspectionSystem/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Demo](https://img.shields.io/badge/Demo-Live-green)](https://monitor.jefsky.com/)
 
 ## 功能特点
 
@@ -76,6 +77,8 @@
 3. **刷新状态**: 点击单个网站卡片上的刷新按钮或顶部的"刷新所有"按钮
 4. **编辑网站**: 点击网站卡片上的编辑按钮修改网站信息
 5. **删除网站**: 点击网站卡片上的删除按钮移除网站
+
+**Demo**: [https://monitor.jefsky.com/](https://monitor.jefsky.com/)
 
 ## 部署
 

@@ -19,6 +19,15 @@
           class="theme-toggle-btn"
           :title="isDarkMode ? '切换到浅色模式' : '切换到深色模式'"
         />
+        
+        <!-- GitHub 链接按钮 -->
+        <el-button
+          circle
+          icon="Github"
+          @click="openGitHub"
+          class="github-btn"
+          title="查看 GitHub 仓库"
+        />
       </div>
     </div>
 
@@ -518,6 +527,10 @@ const toggleDarkMode = () => {
   }
 }
 
+const openGitHub = () => {
+  window.open('https://github.com/Jefsky/InspectionSystem', '_blank');
+}
+
 // 加载网站数据
 onMounted(() => {
   console.log('加载网站数据...')
@@ -687,6 +700,10 @@ onMounted(() => {
 }
 
 .theme-toggle-btn {
+  margin-left: 10px;
+}
+
+.github-btn {
   margin-left: 10px;
 }
 
