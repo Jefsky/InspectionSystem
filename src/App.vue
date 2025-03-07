@@ -23,7 +23,7 @@
         <!-- GitHub 链接按钮 -->
         <el-button
           circle
-          icon="Github"
+          icon="Document"
           @click="openGitHub"
           class="github-btn"
           title="查看 GitHub 仓库"
